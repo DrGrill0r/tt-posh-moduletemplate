@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<plasterManifest
+  schemaVersion="1.1"
+  templateType="Project" xmlns="http://www.microsoft.com/schemas/PowerShell/Plaster/v1">
+  <metadata>
+    <name>tt-posh-moduletemplate</name>
+    <id>d0bdaaf4-dc27-4303-b3a3-4feb6e66243a</id>
+    <version>1.0.0</version>
+    <title>TOP TECHNOLOGIES PoSh Module-Template</title>
+    <description></description>
+    <author>Boris Wagner &lt;bwagner@toptechnologies.de&gt;</author>
+    <tags></tags>
+  </metadata>
+  <parameters>
+    <parameter name='ModuleName' type='text' 
+        prompt='Name of the module'/>
+    <parameter name='ModuleDescription' type='text' 
+        default='${PLASTER_PARAM_ModuleName}' 
+        prompt='Brief module descripiton'/>
+    <parameter name="Author" type="user-fullname" 
+        store="text" 
+        prompt="Module author's name"/>
+    <parameter name="CompanyName" type="text" 
+        default="TOP TECHNOLOGIES CONSULTING GmbH" 
+        prompt="Name of your Company"/>
+	  <parameter name='SetupPester' type='choice' 
+        prompt='Do you want to setup Pester unit tests?'
+        default='0'
+        store='text'>
+      <choice label='&amp;Yes' value="Yes" />
+      <choice label='&amp;No' value="No" />
+    </parameter>
+    <parameter name='DirectoryOptions' type='multichoice' 
+        prompt='Select project directory you want to create:'
+        default='0,1'
+        store='text'>
+      <choice label='&amp;Export' 
+          help='Cmdlets and functions for use by module consumer.'
+          value='Export' />
+      <choice label='&amp;Private' 
+          help='Cmdlets and functions for internal use only.'
+          value='Private' />
+      <choice label='&amp;Data' 
+          help='Data used by the module.'
+          value='Private' />
+    </parameter>
+  </parameters>
+  <content>
+    <message>Creating folder structure</message>
+      <file condition='$PLASTER_PARAM_DirectoryOptions -contains "Export"'
+           destination='Export' 
+           source='' />
+      <file condition='$PLASTER_PARAM_DirectoryOptions -contains "Private"'
+           destination='Private' 
+           source='' />
+      <file condition='$PLASTER_PARAM_DirectoryOptions -contains "Data"'
+           destination='Data'
+           source='' />
+      <file condition='$PLASTER_PARAM_SetupPester -eq "Yes"'
+           destination='Tests' 
+           source='' />
+
+      <templateFile destination='${PLASTER_PARAM_ModuleName}.psm1' 
+          source='src\ModuleTemplate.psm1' />
+    
+      <templateFile condition='$PLASTER_PARAM_SetupPester -eq "Yes"'
+          destination='Tests\${PLASTER_PARAM_ModuleName}.Tests.ps1' 
+          source='src\ModuleTemplate.Tests.ps1'/>
+      <file condition='$PLASTER_PARAM_SetupPester -eq "Yes"'
+          destination='Tests\Get-FunctionDefinitions.ps1'
+          source='src\TestHelper.Get-FunctionDefinitions.ps1' />
+
+      <file destination='.vscode\settings.json'
+            source='src\editor.vscode.settings.json' />
+    
+    	<newModuleManifest destination='${PLASTER_PARAM_ModuleName}.psd1'
+    			moduleVersion='$PLASTER_PARAM_Version' 
+    			rootModule='${PLASTER_PARAM_ModuleName}.psm1'
+    			author='$PLASTER_PARAM_Author'
+    			description='$PLASTER_PARAM_ModuleDescription'
+    			encoding='UTF8'
+    			powerShellVersion='5.1' />
+
+      <!-- The file globbing pattern CmdletsToExport = '*' is bad style and results in templates not exported correctly.
+               Make sure the cmdlets and functions are exported explicitly by specifying each in the manifest by its name.
+               If pester support is chosen. This template will create a unit test that checks if cmdlets/functions are
+               mentioned in the manifest. -->
+      <modify path='${PLASTER_PARAM_ModuleName}.psd1' encoding='UTF8'>
+        <replace>
+          <!-- Remove file globbing pattern here. -->
+          <original>(FunctionsToExport|CmdletsToExport) = '\*'</original>
+          <substitute>$1 = ''</substitute>
+        </replace>
+      </modify>
+    
+    	<requireModule name="Pester" condition='$PLASTER_PARAM_SetupPester -eq "Yes"'
+    			minimumVersion="3.4.0"
+          message="Without Pester, you will not be able to run the provided Pester test to validate your module manifest file.`nWithout version 3.4.0, VS Code will not display Pester warnings and errors in the Problems panel."/>
+  </content>
+</plasterManifest>

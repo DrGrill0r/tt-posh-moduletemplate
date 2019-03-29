@@ -1,0 +1,5 @@
+{
+    "editor.renderWhitespace": "boundary",
+    "editor.insertSpaces": true,
+    "files.encoding": "utf8"
+}
